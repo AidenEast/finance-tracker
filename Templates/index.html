@@ -1,0 +1,130 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<h2 class="mb-4">Dashboard</h2>
+
+{# ---- Charts ---- #}
+<div class="row mb-5">
+    <div class="col-md-5">
+        <div class="card shadow-sm">
+            <div class="card-body">
+                <h5 class="card-title">This Month by Category</h5>
+                <canvas id="categoryChart"></canvas>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-7">
+        <div class="card shadow-sm">
+            <div class="card-body">
+                <h5 class="card-title">Income vs Expenses (Last 6 Months)</h5>
+                <canvas id="monthlyChart"></canvas>
+            </div>
+        </div>
+    </div>
+</div>
+
+{# ---- Transactions Table ---- #}
+<div class="card shadow-sm">
+    <div class="card-body">
+        <h5 class="card-title mb-3">All Transactions</h5>
+        <table class="table table-hover align-middle">
+            <thead class="table-dark">
+                <tr>
+                    <th>Date</th>
+                    <th>Description</th>
+                    <th>Category</th>
+                    <th>Type</th>
+                    <th>Amount</th>
+                    <th>Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for t in transactions %}
+                <tr>
+                    <td>{{ t.date }}</td>
+                    <td>{{ t.description or '—' }}</td>
+                    <td>
+                        {% if t.category_name %}
+                            <span class="badge" style="background:{{ t.category_color }}">
+                                {{ t.category_name }}
+                            </span>
+                        {% else %}
+                            <span class="text-muted">—</span>
+                        {% endif %}
+                    </td>
+                    <td>
+                        {% if t.type == 'income' %}
+                            <span class="badge bg-success">Income</span>
+                        {% else %}
+                            <span class="badge bg-danger">Expense</span>
+                        {% endif %}
+                    </td>
+                    <td class="{{ 'text-success fw-bold' if t.type == 'income' else 'text-danger fw-bold' }}">
+                        ${{ "%.2f"|format(t.amount) }}
+                    </td>
+                    <td>
+                        <a href="{{ url_for('edit_transaction', transaction_id=t.id) }}"
+                           class="btn btn-sm btn-outline-primary me-1">Edit</a>
+                        <form action="{{ url_for('delete_transaction', transaction_id=t.id) }}"
+                              method="POST" class="d-inline">
+                            <button type="submit" class="btn btn-sm btn-outline-danger"
+                                    onclick="return confirm('Delete this transaction?')">
+                                Delete
+                            </button>
+                        </form>
+                    </td>
+                </tr>
+                {% else %}
+                <tr>
+                    <td colspan="6" class="text-center text-muted py-4">
+                        No transactions yet. Add one above!
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    fetch("{{ url_for('chart_expenses_by_category') }}")
+        .then(res => res.json())
+        .then(data => {
+            new Chart(document.getElementById('categoryChart'), {
+                type: 'doughnut',
+                data: {
+                    labels: data.map(d => d.name),
+                    datasets: [{
+                        data:            data.map(d => d.total),
+                        backgroundColor: data.map(d => d.color)
+                    }]
+                }
+            });
+        });
+
+    fetch("{{ url_for('chart_monthly_totals') }}")
+        .then(res => res.json())
+        .then(data => {
+            new Chart(document.getElementById('monthlyChart'), {
+                type: 'bar',
+                data: {
+                    labels: data.map(d => d.month),
+                    datasets: [
+                        {
+                            label: 'Income',
+                            data: data.map(d => d.income),
+                            backgroundColor: '#2ECC71'
+                        },
+                        {
+                            label: 'Expenses',
+                            data: data.map(d => d.expenses),
+                            backgroundColor: '#E74C3C'
+                        }
+                    ]
+                }
+            });
+        });
+</script>
+{% endblock %}
