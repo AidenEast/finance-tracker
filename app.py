@@ -34,8 +34,8 @@ def add_transaction():
         except ValueError:
             return render_template('add_transaction.html', categories=categories, error="Amount must be a positive number.")
         
-        if type_ not in ('Income', 'Expense'):
-            return render_template('add_transaction.html', categories=categories, error="Type must be either 'Income' or 'Expense'.")
+        if type_ not in ('income', 'expense'):
+            return render_template('add_transaction.html', categories=categories, error="Type must be either 'income' or 'expense'.")
 
         db.add_transaction(amount, type_, description, category_id, date)
         return redirect(url_for('index'))
