@@ -48,11 +48,25 @@ def edit_transaction(transaction_id):
     categories = db.get_all_categories()
 
     if request.method == 'POST':
-        amount      = request.form['amount']
-        type_       = request.form['type']
-        description = request.form.get('description', '')
+        amount      = request.form.get('amount', '').strip()
+        type_       = request.form.get('type', '').strip()
+        description = request.form.get('description', '').strip()
         category_id = request.form.get('category_id') or None
-        date        = request.form['date']
+        date        = request.form.get('date', '').strip()
+
+        if not amount or not type_ or not date:
+            return render_template('edit_transaction.html', categories=categories, error="Amount, Type, and Date are required.")
+        
+        try:
+            amount = float(amount)
+            if amount <= 0:
+                raise ValueError
+
+        except ValueError:
+            return render_template('edit_transaction.html', categories=categories, error="Amount must be a positive number.")
+        
+        if type_ not in ('income', 'expense'):
+            return render_template('edit_transaction.html', categories=categories, error="Type must be either 'income' or 'expense'.")
 
         db.update_transaction(transaction_id, amount, type_, description, category_id, date)
         return redirect(url_for('index'))
@@ -76,8 +90,19 @@ def budgets():
 
 @app.route('/budgets/set', methods=['POST'])
 def set_budget():
-    category_id = request.form['category_id']
-    monthly_limit = request.form['monthly_limit']
+    category_id = request.form.get('category_id', '').strip() or None
+    monthly_limit = request.form.get('monthly_limit', '').strip()
+
+    if not category_id or not monthly_limit:
+        return redirect(url_for('budgets'))
+    
+    try:
+        monthly_limit = float(monthly_limit)
+        if monthly_limit <= 0:
+            raise ValueError
+    
+    except ValueError:
+        return redirect(url_for('budgets'))
 
     db.set_budget(category_id, monthly_limit)
     return redirect(url_for('budgets'))
