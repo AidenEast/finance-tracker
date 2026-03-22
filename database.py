@@ -168,34 +168,15 @@ def delete_transaction(transaction_id):
         cursor.execute("DELETE FROM transactions WHERE id = ?", (transaction_id,))
         conn.commit()
 
-def update_transaction(transaction_id, amount=None, type_=None, description=None, category_id=None, date=None):
-    """Update a transaction's details."""
-    updates, params = [], []
-
-    if amount is not None:
-        updates.append("amount = ?")
-        params.append(amount)
-    if type_ is not None:
-        updates.append("type = ?")
-        params.append(type_)
-    if description is not None:
-        updates.append("description = ?")
-        params.append(description)
-    if category_id is not None:
-        updates.append("category_id = ?")
-        params.append(category_id)
-    if date is not None:
-        updates.append("date = ?")
-        params.append(date)
-
-    if not updates:
-        return  # nothing to update
-
-    query = "UPDATE transactions SET " + ", ".join(updates) + " WHERE id = ?"
-    params.append(transaction_id)
+def update_transaction(transaction_id, amount, type_, description, category_id, date):
+    """Update an existing transaction."""
     with get_connection() as conn:
         cursor = conn.cursor()
-        cursor.execute(query, params)
+        cursor.execute("""
+            UPDATE transactions
+            SET amount = ?, type = ?, description = ?, category_id = ?, date = ?
+            WHERE id = ?
+        """, (amount, type_, description, category_id, date, transaction_id))
         conn.commit()
 
 
@@ -248,7 +229,7 @@ def delete_budget(budget_id):
 # Chart Data
 # ======================================================================================================
 
-def get_monthly_expenses_by_category():
+def get_expenses_by_category():
     """Return total expenses for the current month grouped by category."""
     with get_connection() as conn:
         cursor = conn.cursor()

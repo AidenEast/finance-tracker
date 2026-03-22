@@ -17,11 +17,25 @@ def add_transaction():
     categories = db.get_all_categories()
 
     if request.method == 'POST':
-        amount      = request.form['amount']
-        type_       = request.form['type']
-        description = request.form.get('description', '')
+        amount      = request.form.get('amount', '').strip()
+        type_       = request.form.get('type', '').strip()
+        description = request.form.get('description', '').strip()
         category_id = request.form.get('category_id') or None
-        date        = request.form['date']
+        date        = request.form.get('date', '').strip()
+
+        if not amount or not type_ or not date:
+            return render_template('add_transaction.html', categories=categories, error="Amount, Type, and Date are required.")
+        
+        try:
+            amount = float(amount)
+            if amount <= 0:
+                raise ValueError
+
+        except ValueError:
+            return render_template('add_transaction.html', categories=categories, error="Amount must be a positive number.")
+        
+        if type_ not in ('Income', 'Expense'):
+            return render_template('add_transaction.html', categories=categories, error="Type must be either 'Income' or 'Expense'.")
 
         db.add_transaction(amount, type_, description, category_id, date)
         return redirect(url_for('index'))
@@ -93,6 +107,6 @@ def chart_monthly_totals():
 # ======================================================================================================
 
 if __name__ == '__main__':
-    db
+    db.init_db()
     app.run(debug=True)
          
